@@ -129,7 +129,19 @@ function move_to(sp, ep) {
     let halfTag = 0;
 
     if (e.type != 0 && e.type != 5 && e.color != myColor && Math.floor((s.amount - 1) / 2) > e.amount) {
-        halfTag = 1;
+        let flag = false;
+
+        for (let nxt of getNeighbours(sp)) {
+            let node = gm[nxt[0]][nxt[1]];
+            if (node.color != myColor && (node.type == 2 || node.type == 3) && (nxt[0] != ep[0] || nxt[1] != ep[1])) {
+                flag = true;
+                break;
+            }
+        }
+
+        if (flag) {
+            halfTag = 1;
+        }
     }
 
     return [sp, ep, halfTag];
@@ -192,7 +204,7 @@ function changeTarget() {
 }
 
 function nextMove() {
-    if (target.length == 0) {
+    if (target.length == 0 || gm[target[0]][target[1]].color == myColor) {
         changeTarget();
         from = [];
 
