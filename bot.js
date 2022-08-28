@@ -60,6 +60,7 @@ s.on("Map_Update", (dat) => {
 
 s.on("WinAnction", () => {
     hasmap = false;
+    target = [];
     voteStart(1);
     voteMap(1);
 });
@@ -325,5 +326,9 @@ function expand() {
 }
 
 function botMove() {
-    updateMovement(randInt(1, 100) >= 80 ? nextMove() : expand());
+    try {
+        updateMovement(randInt(1, 100) >= 70 ? nextMove() : expand());
+    } catch (error) {
+        console.error(error);
+    }
 }
