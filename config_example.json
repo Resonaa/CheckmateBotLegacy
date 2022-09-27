@@ -2,5 +2,6 @@
     "gameRoom": "随机房",
     "cookie": "client_session=xxxxxxxxx",
     "private": false,
-    "speed": 4
+    "speed": 4,
+    "autoLogin": false
 }

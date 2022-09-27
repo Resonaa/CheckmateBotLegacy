@@ -1,10 +1,11 @@
-let io = require("socket.io-client");
-let config = require("./config");
+const io = require("socket.io-client");
+const config = require("./config");
+const getCookie = require("./get-cookie")
 
-let cookie = config.cookie;
+const cookie = config.cookie;
 
 let myColor;
-let size = 20;
+let size;
 let gm;
 
 let s = io("https://kana.byha.top:444/", {
@@ -19,36 +20,38 @@ s.on("connect", () => {
 
 s.on("error", () => console.error("WS Error!"));
 
-s.on("disconnect", () => console.warn("WS disconnected!"));
+s.on("disconnect", async () => {
+    console.warn("WS disconnected!");
+
+    if (!(await getCookie.checkCookieAvailability(cookie))) {
+        console.log("getting new cookie...")
+        await getCookie.getCookie();
+    }
+});
 
 s.on("reconnect", () => console.warn("WS reconnect!"));
+
+function ready() {
+    s.emit("changeSettings", { map: 1 });
+    s.emit("VoteStart", 1);
+}
 
 function joinRoom() {
     s.emit("joinRoom", config.gameRoom);
     console.log("join room", config.gameRoom);
-    voteStart(1);
+    ready();
 }
 
-function voteStart(i) {
-    s.emit("VoteStart", i);
-}
-
-s.on("UpdateGM", (dat) => {
+s.on("UpdateGM", dat => {
     size = dat[0].length - 1;
     gm = dat;
 });
 
-s.on("UpdateColor", (dat) => myColor = dat);
+s.on("UpdateColor", dat => myColor = dat);
 
-s.on("UpdateSize", (dat) => size = dat);
-
-s.on("Map_Update", (dat) => {
-    if (!myColor || !gm) {
-        return;
-    }
-
-    for (let e of dat[1]) {
-        gm[Number(e[0])][Number(e[1])] = JSON.parse(e[2]);
+s.on("Map_Update", dat => {
+    for (let [x, y, val] of dat[1]) {
+        gm[Number(x)][Number(y)] = JSON.parse(val);
     }
 
     botMove();
@@ -56,28 +59,15 @@ s.on("Map_Update", (dat) => {
 
 s.on("WinAnction", () => {
     target = [];
-    voteStart(1);
-    voteMap(1);
+    ready();
 });
 
-function setSpeed(speed) {
-    s.emit("changeSettings", { speed: speed });
-}
-
-function setPrivate(private) {
-    s.emit("changeSettings", { private: private });
-}
-
-function voteMap(map) {
-    s.emit("changeSettings", { map: map });
-}
-
-s.on("UpdateSettings", (dat) => {
+s.on("UpdateSettings", dat => {
     if (dat.private != config.private)
-        setPrivate(config.private);
+        s.emit("changeSettings", { private: config.private });
 
     if (dat.speed != config.speed)
-        setSpeed(config.speed);
+        s.emit("changeSettings", { speed: config.speed });
 });
 
 let dir = [[-1, 0], [0, 1], [1, 0], [0, -1]];
